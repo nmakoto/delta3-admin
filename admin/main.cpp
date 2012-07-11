@@ -1,3 +1,6 @@
+// main.cpp
+// Delta3 project -- Universal remote control system
+
 #include <QApplication>
 #include "mainwindow.h"
 

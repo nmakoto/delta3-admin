@@ -1,14 +1,18 @@
+// telnetform.h
+// Delta3 project -- Universal remote control system
+
 #pragma once
 
 #include <QDialog>
 #include "network.h"
 #include "defines.h"
 
+//------------------------------------------------------------------------------
 namespace Ui
 {
 class TelnetForm;
 }
-
+//------------------------------------------------------------------------------
 class TelnetForm : public QWidget
 {
     Q_OBJECT
@@ -30,4 +34,4 @@ private:
     qint32 clientId_;
     Ui::TelnetForm* ui;
 };
-
+//------------------------------------------------------------------------------

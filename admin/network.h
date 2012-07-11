@@ -1,17 +1,17 @@
+// network.h
+// Delta3 project -- Universal remote control system
+
 #pragma once
+
 #include <QObject>
-#include <QtNetwork/QTcpSocket>
-#include <QtNetwork/QHostAddress>
 #include <QMap>
-#include <QRegExp>
-#include <QStringList>
-#include <QByteArray>
-#include <QString>
+#include <QtNetwork/QTcpSocket>
 #include "client.h"
 #include "defines.h"
 
 typedef QMap<qint32, Client*> Clients;
 
+//------------------------------------------------------------------------------
 class Network : public QObject
 {
     Q_OBJECT
@@ -40,15 +40,20 @@ private slots:
     void onDataReceived();
     void onConnected();
 private:
+
     // parsing level 1 proto
     void parseData( const QByteArray& data );
+
     bool parseList( const QByteArray& data );
     bool parseResponse( const QByteArray& data );
+
     // parsing level 2 proto
     void parseProtoTwo( qint32 from, const QByteArray& data );
+
     bool parseMessage( qint32 from, const QByteArray& data );
 private:
     QTcpSocket* socket_;
     Clients clients_;
     Income income_;
 };
+//------------------------------------------------------------------------------

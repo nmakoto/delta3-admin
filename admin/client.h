@@ -1,8 +1,12 @@
+// client.h
+// Delta3 project -- Universal remote control system
+
 #pragma once
+
 #include <QObject>
 #include <QString>
-#include <QDebug>
 
+//------------------------------------------------------------------------------
 class Client : public QObject
 {
     Q_OBJECT
@@ -15,3 +19,4 @@ private:
     QString clientIdHash_;
     qint32 clientId_;
 };
+//------------------------------------------------------------------------------

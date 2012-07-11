@@ -1,3 +1,6 @@
+// mainwindow.h
+// Delta3 project -- Universal remote control system
+
 #pragma once
 
 #include <QMainWindow>
@@ -5,11 +8,12 @@
 #include "network.h"
 #include "telnetform.h"
 
+//------------------------------------------------------------------------------
 namespace Ui
 {
 class MainWindow;
 }
-
+//------------------------------------------------------------------------------
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -21,10 +25,10 @@ public:
 private slots:
     void on_actionConnect_activated();
     void onRedraw();
-
     void on_listWidget_itemClicked( QListWidgetItem* item );
 
 private:
     Ui::MainWindow* ui;
     Network* network_;
 };
+//------------------------------------------------------------------------------

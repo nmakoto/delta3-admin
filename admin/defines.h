@@ -1,5 +1,9 @@
+// defines.h
+// Delta3 project -- Universal remote control system
+
 #pragma once
 
+//------------------------------------------------------------------------------
 enum ProtocolMode
 {
     MOD_TELNET = 1,
@@ -9,3 +13,4 @@ enum ProtocolMode
     MOD_PROXY = 5,
     MOD_REDIRECT = 6
 };
+//------------------------------------------------------------------------------

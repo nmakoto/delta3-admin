@@ -1,6 +1,10 @@
+// mainwindow.cpp
+// Delta3 project -- Universal remote control system
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+//------------------------------------------------------------------------------
 MainWindow::MainWindow( QWidget* parent ):
     QMainWindow( parent ),
     ui( new Ui::MainWindow )
@@ -15,17 +19,17 @@ MainWindow::MainWindow( QWidget* parent ):
     );
     this->setFixedSize( this->size() );
 }
-
+//------------------------------------------------------------------------------
 MainWindow::~MainWindow()
 {
     delete ui;
 }
-
+//------------------------------------------------------------------------------
 void MainWindow::on_actionConnect_activated()
 {
     network_->connectToServer();
 }
-
+//------------------------------------------------------------------------------
 void MainWindow::onRedraw()
 {
     qDebug() << "onRedraw()";
@@ -44,10 +48,10 @@ void MainWindow::onRedraw()
         list->addItem( item );
     }
 }
-
+//------------------------------------------------------------------------------
 void MainWindow::on_listWidget_itemClicked( QListWidgetItem* item )
 {
-    //TODO: menu with select connection mode
+    // TODO: menu with select connection mode
 
     TelnetForm* telnet = new TelnetForm(
         network_,
@@ -58,3 +62,4 @@ void MainWindow::on_listWidget_itemClicked( QListWidgetItem* item )
 
     telnet->show();
 }
+//------------------------------------------------------------------------------

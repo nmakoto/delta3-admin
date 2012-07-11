@@ -1,6 +1,10 @@
+// telnetform.cpp
+// Delta3 project -- Universal remote control system
+
 #include "telnetform.h"
 #include "ui_telnetform.h"
 
+//------------------------------------------------------------------------------
 TelnetForm::TelnetForm( Network* network, qint32 clientId, QWidget* parent ):
     QWidget( parent ),
     network_( network ),
@@ -20,13 +24,13 @@ TelnetForm::TelnetForm( Network* network, qint32 clientId, QWidget* parent ):
         SLOT(onDataReceived())
     );
 }
-
+//------------------------------------------------------------------------------
 TelnetForm::~TelnetForm()
 {
     network_->deactivateMode( clientId_, MOD_TELNET );
     delete ui;
 }
-
+//------------------------------------------------------------------------------
 void TelnetForm::on_lineEdit_returnPressed()
 {
     network_->sendLevelTwo(
@@ -36,10 +40,9 @@ void TelnetForm::on_lineEdit_returnPressed()
     );
     ui->lineEdit->clear();
 }
-
+//------------------------------------------------------------------------------
 void TelnetForm::onDataReceived()
 {
-
     if(
         network_->receivedData().from != clientId_ ||
         network_->receivedData().mode != MOD_TELNET
@@ -48,3 +51,4 @@ void TelnetForm::onDataReceived()
 
     ui->textEdit->insertPlainText( network_->receivedData().data );
 }
+//------------------------------------------------------------------------------
