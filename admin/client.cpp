@@ -1,7 +1,9 @@
 #include "client.h"
 
-Client::Client(QObject *parent,const QString& _clientHash,qint32 _id):
-    QObject(parent), clientIdHash_(_clientHash),clientId_(_id)
+Client::Client( QObject* parent, const QString& clientHash, qint32 id ):
+    QObject( parent ),
+    clientIdHash_( clientHash ),
+    clientId_( id )
 {
     qDebug() << clientId_ << clientIdHash_;
 }
