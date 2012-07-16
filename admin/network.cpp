@@ -7,6 +7,7 @@
 #include <QByteArray>
 #include <QString>
 #include "network.h"
+#include "netextract.h"
 
 //------------------------------------------------------------------------------
 Network::Network( QObject* parent ):
@@ -15,16 +16,16 @@ Network::Network( QObject* parent ):
     socket_ = new QTcpSocket( this );
     QObject::connect(
         socket_,
-        SIGNAL(readyRead()),
+        SIGNAL( readyRead() ),
         this,
-        SLOT(onDataReceived())
+        SLOT( onDataReceived() )
     );
 
     QObject::connect(
         socket_,
-        SIGNAL(connected()),
+        SIGNAL( connected() ),
         this,
-        SLOT(onConnected())
+        SLOT( onConnected() )
     );
 }
 //------------------------------------------------------------------------------
@@ -39,96 +40,193 @@ void Network::connectToServer()
 //------------------------------------------------------------------------------
 void Network::onDataReceived()
 {
-    qDebug( "onDataReceived()" );
-    QByteArray data = socket_->readAll();
-    parseData( data );
-}
-//------------------------------------------------------------------------------
-void Network::parseData( const QByteArray& data )
-{
-    parseList( data );
-    parseResponse( data );
-}
-//------------------------------------------------------------------------------
-bool Network::parseList( const QByteArray& data )
-{
-    QRegExp re( "l:(.+):" );
+    qDebug() << "onDataReceived()";
+    buf_ += socket_->readAll();
 
-    if( re.indexIn(data) == -1 )
-        return false;
+    if( buf_.size() < 3 )
+        return; // if we don't read header
+
+    if(
+        getProtoId( buf_ ) != CSPYP1_PROTOCOL_ID ||
+        getProtoVerstion( buf_ ) != CSPYP1_PROTOCOL_VERSION
+    )
+    {
+        // wrong packet - disconnecting client
+        qDebug() << "PROTOCOL ERROR!";
+        //this->disconnectFromHost();
+        return;
+    }
+
+    //------------------------------------------------------------------------------
+    qDebug() << "buf size" << buf_.size();
+    qDebug() << "cmd:" << getCommand( buf_ );
+
+    switch( getCommand(buf_) )
+    {
+    case CMD1_RLIST:
+        qDebug() << "list";
+        parseList();
+        break;
+
+    case CMD1_TRANSMIT:
+        qDebug() << "transmit";
+        parseResponse();
+        break;
+
+    case CMD1_PING:
+        qDebug() << "ping";
+        parsePing();
+        break;
+
+    default:
+        // for warning disable
+        break;
+    }
+}
+//------------------------------------------------------------------------------
+void Network::parseList()
+{
+    if( buf_.size() < 5 ) // TODO: remove magic number
+        return;     // not all data avaliable
 
     qDebug( "parseList()" );
+    qDebug() << buf_.size();
 
-    QStringList clients = re.cap( 1 ).split( ";" );
+    // TODO: remove magic number
+    if( buf_.size() < 5 + getClientNumber(buf_) * CMD1_CLIENT_INFO_SIZE )
+        return;     // not all data avaliable
 
-    clients_.clear();
-
-    for( auto i = clients.begin(); (i + 1) < clients.end(); i += 2 )
+    for( qint16 i = 0; i < getClientNumber(buf_); i++ )
     {
-        qint32 id = ( *i ).toInt();
-        QString hash = *( i + 1 );
-
-        //qDebug() << id << hash;
-        if( hash.size() != 32 )
-            continue;
-
-        Client* client = new Client( this, hash, id );
-        clients_.insert( id, client );
+        Client* client = new Client( this );
+        client->setId( getClientId(i, buf_) );
+        client->setHash( getClientHash(i, buf_) );
+        client->setOs( getClientOs(i, buf_) );
+        client->setDevice( getClientDevice(i, buf_) );
+        client->setCaption( getClientCaption(i, buf_) );
+        clients_.insert( getClientId(i, buf_), client );
     }
 
     emit listUpdated();
-    return true;
+
+    buf_ = buf_.right(
+        buf_.size() - (5 + getClientNumber(buf_) * CMD1_CLIENT_INFO_SIZE)
+    );
+
+    if( buf_.size() > 0 )
+        onDataReceived();   // If something in buffer - parse again
 }
 //------------------------------------------------------------------------------
-bool Network::parseResponse( const QByteArray& data )
+void Network::parsePing()
 {
-    QRegExp re( "f:(\\d+):(\\d+):(.+)" );
+    qDebug() << "Ping received!";
 
-    if( re.indexIn(data) == -1 )
-        return false;
+    if( buf_.size() < 3 ) // TODO: remove magic number
+        return;     // not all data avaliable
 
-    qDebug( "parseResponse()" );
+    QByteArray cmd;
+    cmd.append( CSPYP1_PROTOCOL_ID );
+    cmd.append( CSPYP1_PROTOCOL_VERSION );
+    cmd.append( CMD1_PING );
+    socket_->write( cmd );
 
-    qint32 from = re.cap( 1 ).toInt();
-    qint32 len = re.cap( 2 ).toInt();
-    QByteArray dataTwo = re.cap( 3 ).toLocal8Bit();
+    qDebug() << "Ping parsed and answere!";
 
-    dataTwo = dataTwo.left( len );
+    buf_ = buf_.right( buf_.size() - 3 );
 
-    parseProtoTwo( from, dataTwo );
-    return true;
+    if( buf_.size() > 0 )
+        onDataReceived();   // If something in buffer - parse again
+}
+
+void Network::parseResponse()
+{
+    qDebug() << "parseResponse()";
+
+    if( buf_.size() < 9 ) // TODO: remove magic number
+        return;     // not all data avaliable
+
+    if( buf_.size() < getPacketLength(buf_) + 9 ) // TODO: remove magic number
+        return; // not all data avaliable
+
+    qint16 from = getClientId( buf_ );
+
+    QByteArray cmd = getPacketData( buf_ );
+
+    qDebug() << "parseResponse():";
+
+    parseProtoTwo( from, cmd );
+    return;
 }
 //------------------------------------------------------------------------------
 void Network::parseProtoTwo( qint32 from, const QByteArray& data )
 {
-    qDebug() << "parseProtoTwo():" << data;
+    qDebug() << "parseProtoTwo()";
 
-    parseMessage( from, data );
+    if(
+        getProtoId( data ) != CSPYP2_PROTOCOL_ID ||
+        getProtoVerstion( data ) != CSPYP2_PROTOCOL_VERSION
+    )
+    {
+        // wrong packet - disconnecting client
+        qDebug() << "PROTOCOL ERROR!";
+        //this->disconnectFromHost();
+        return;
+    }
+
+
+    switch( getCommand2(data) )
+    {
+    case CMD2_TRANSMIT:
+        qDebug() << "transmit2";
+        parseMessage( from, data );
+        break;
+
+    case CMD2_MODES:
+        qDebug() << "modes";
+        //TODO: parse avaliable modes
+        break;
+
+    default:
+        // for warning disable
+        break;
+    }
 }
 //------------------------------------------------------------------------------
-bool Network::parseMessage( qint32 from, const QByteArray& data )
+void Network::parseMessage( qint32 from, const QByteArray& data )
 {
-    QRegExp re( "(\\d+):(\\d+):(.+)" );
 
-    if( re.indexIn(data) == -1 )
-        return false;
-
-    ProtocolMode mode = ProtocolMode( re.cap(1).toInt() );
-    qint32 len = re.cap( 2 ).toInt();
-
-    income_.mode = mode;
+    income_.mode = getMode2( data );
     income_.from = from;
-    income_.data = data.left( len );
-    emit dataIncome();
+    income_.data = getPacketData2( data );
 
-    return true;
+    emit dataIncome();
+    //buf_ = buf_.right( buf_.size() - 3 );
+    //if( buf_.size() > 0 )
+    //    onDataReceived();   // If something in buffer - parse again
+    buf_.clear();
 }
 //------------------------------------------------------------------------------
 void Network::onConnected()
 {
-    socket_->write( "cspyadm:1:admin:admin:" );
-    socket_->write( "l:" );
-    socket_->flush();
+    QByteArray cmd;
+    cmd.append( CSPYP1_PROTOCOL_ID );
+    cmd.append( CSPYP1_PROTOCOL_VERSION );
+    cmd.append( CMD1_ADM );
+    QByteArray login = "admin";
+    QByteArray password = "admin";
+    login.leftJustified( 22, 0 );
+    password.leftJustified( 22, 0 );
+    cmd.append( login, 22 );
+    cmd.append( password, 22 );
+    socket_->write( cmd );
+
+    cmd.clear();
+
+    cmd.append( CSPYP1_PROTOCOL_ID );
+    cmd.append( CSPYP1_PROTOCOL_VERSION );
+    cmd.append( CMD1_LIST );
+
+    socket_->write( cmd );
 }
 //------------------------------------------------------------------------------
 const Clients& Network::getClients() const
@@ -136,7 +234,7 @@ const Clients& Network::getClients() const
     return clients_;
 }
 //------------------------------------------------------------------------------
-QString Network::getClientName( qint32 id ) const
+QString Network::getClientName( qint16 id ) const
 {
     auto client = clients_.find( id );
 
@@ -146,37 +244,47 @@ QString Network::getClientName( qint32 id ) const
     return client.value()->getHash();
 }
 //------------------------------------------------------------------------------
-void Network::sendLevelOne( qint32 dest, const QByteArray& data )
+void Network::sendLevelOne( qint16 dest, const QByteArray& data )
 {
-    QByteArray packet;
-    packet = (
-        QString("t:%1:%2:").arg(dest).arg(data.size())
-    ).toLocal8Bit();
-    packet += data + ':';
-    socket_->write( packet );
+    QByteArray cmd;
+    cmd.append( CSPYP1_PROTOCOL_ID );
+    cmd.append( CSPYP1_PROTOCOL_VERSION );
+    cmd.append( CMD1_TRANSMIT );
+    cmd.append( toBytes(dest) );
+    cmd.append( toBytes(data.size()) );
+    cmd.append( data );
+    qDebug() << cmd.toHex();
+    socket_->write( cmd );
 }
 //------------------------------------------------------------------------------
 void Network::sendLevelTwo(
-    qint32 dest,
+    qint16 dest,
     ProtocolMode mode,
     const QByteArray& data
 )
 {
-    QByteArray packet;
-    packet = (
-        QString("%1:%2:").arg(mode).arg(data.size())
-    ).toLocal8Bit();
-    packet += data + ':';
-    sendLevelOne( dest, packet );
+    QByteArray cmd;
+    cmd.append( CSPYP2_PROTOCOL_ID );
+    cmd.append( CSPYP2_PROTOCOL_VERSION );
+    cmd.append( CMD2_TRANSMIT );
+    cmd.append( mode );
+    cmd.append( toBytes(data.size()) );
+    cmd.append( data );
+    sendLevelOne( dest, cmd );
 }
 //------------------------------------------------------------------------------
-void Network::activateMode( qint32 client, ProtocolMode mode )
+void Network::activateMode( qint16 client, ProtocolMode mode )
 {
-    QString cmd = QString( "a:%1:" ).arg( mode );
-    sendLevelOne( client, cmd.toLocal8Bit() );
+    QByteArray cmd;
+    cmd.append( CSPYP2_PROTOCOL_ID );
+    cmd.append( CSPYP2_PROTOCOL_VERSION );
+    cmd.append( CMD2_ACTIVATE );
+    cmd.append( mode );
+
+    sendLevelOne( client, cmd );
 }
 //------------------------------------------------------------------------------
-void Network::deactivateMode( qint32 client, ProtocolMode mode )
+void Network::deactivateMode( qint16 client, ProtocolMode mode )
 {
     QString cmd = QString( "d:%1:" ).arg( mode );
     sendLevelOne( client, cmd.toLocal8Bit() );
@@ -185,5 +293,11 @@ void Network::deactivateMode( qint32 client, ProtocolMode mode )
 const Network::Income& Network::receivedData() const
 {
     return income_;
+}
+//------------------------------------------------------------------------------
+const Client* Network::getClient( qint16 clientId ) const
+{
+    auto i = clients_.find( clientId );
+    return i.value();
 }
 //------------------------------------------------------------------------------

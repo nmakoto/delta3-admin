@@ -1,44 +1,31 @@
-// telnetform.h
+// clientinfodialog.h
 // Delta3 project -- Universal remote control system
 
 #pragma once
 
-#include <QWidget>
+#include <QDialog>
+#include "client.h"
 #include "network.h"
-#include "defines.h"
 
 //------------------------------------------------------------------------------
 namespace Ui
 {
-class TelnetForm;
+class ClientInfoDialog;
 }
 //------------------------------------------------------------------------------
-class TelnetForm : public QWidget
+class ClientInfoDialog : public QDialog
 {
     Q_OBJECT
-
 public:
-    explicit TelnetForm(
-        Network* network,
+    explicit ClientInfoDialog(
         qint16 clientId,
+        Network* net,
         QWidget* parent = 0
     );
-    ~TelnetForm();
-
-private slots:
-    void onDataReceived();
+    ~ClientInfoDialog();
 
 private:
-    bool eventFilter( QObject* _o, QEvent* _e );
-
-private:
-    void textScrollDown();
-
-private:
+    Ui::ClientInfoDialog* ui;
     Network* network_;
-    qint16 clientId_;
-    Ui::TelnetForm* ui;
-    QString currentCmd_;
-    QString history_;
 };
 //------------------------------------------------------------------------------

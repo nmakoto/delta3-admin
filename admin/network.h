@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QMap>
 #include <QtNetwork/QTcpSocket>
+#include "utils.h"
 #include "client.h"
 #include "defines.h"
 
@@ -18,7 +19,7 @@ class Network : public QObject
 public:
     struct Income
     {
-        qint32 from;
+        qint16 from;
         ProtocolMode mode;
         QByteArray data;
     };
@@ -27,33 +28,34 @@ public:
     Network( QObject* parent );
     void connectToServer();
     const Clients& getClients() const;
-    QString getClientName( qint32 id ) const;
-    void sendLevelOne( qint32 dest, const QByteArray& data );
-    void sendLevelTwo( qint32 dest, ProtocolMode mode, const QByteArray& data );
-    void activateMode( qint32 client, ProtocolMode mode );
-    void deactivateMode( qint32 client, ProtocolMode mode );
+    const Client* getClient( qint16 clientId ) const;
+    QString getClientName( qint16 id ) const;
+    void sendLevelOne( qint16 dest, const QByteArray& data );
+    void sendLevelTwo( qint16 dest, ProtocolMode mode, const QByteArray& data );
+    void activateMode( qint16 client, ProtocolMode mode );
+    void deactivateMode( qint16 client, ProtocolMode mode );
     const Income& receivedData() const;
+
 signals:
     void listUpdated();
     void dataIncome();
+
 private slots:
     void onDataReceived();
     void onConnected();
+
 private:
-
-    // parsing level 1 proto
-    void parseData( const QByteArray& data );
-
-    bool parseList( const QByteArray& data );
-    bool parseResponse( const QByteArray& data );
-
+    void parseList();
+    void parsePing();
+    void parseResponse();
     // parsing level 2 proto
     void parseProtoTwo( qint32 from, const QByteArray& data );
+    void parseMessage( qint32 from, const QByteArray& data );
 
-    bool parseMessage( qint32 from, const QByteArray& data );
 private:
     QTcpSocket* socket_;
     Clients clients_;
     Income income_;
+    QByteArray buf_;
 };
 //------------------------------------------------------------------------------

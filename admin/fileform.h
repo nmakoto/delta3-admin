@@ -1,44 +1,30 @@
-// telnetform.h
+// fileform.h
 // Delta3 project -- Universal remote control system
 
 #pragma once
 
 #include <QWidget>
 #include "network.h"
-#include "defines.h"
 
 //------------------------------------------------------------------------------
 namespace Ui
 {
-class TelnetForm;
+class FileForm;
 }
 //------------------------------------------------------------------------------
-class TelnetForm : public QWidget
+class FileForm : public QWidget
 {
     Q_OBJECT
-
 public:
-    explicit TelnetForm(
+    explicit FileForm(
         Network* network,
         qint16 clientId,
-        QWidget* parent = 0
-    );
-    ~TelnetForm();
-
-private slots:
-    void onDataReceived();
-
-private:
-    bool eventFilter( QObject* _o, QEvent* _e );
-
-private:
-    void textScrollDown();
+        QWidget* parent = 0 );
+    ~FileForm();
 
 private:
     Network* network_;
     qint16 clientId_;
-    Ui::TelnetForm* ui;
-    QString currentCmd_;
-    QString history_;
+    Ui::FileForm* ui;
 };
 //------------------------------------------------------------------------------

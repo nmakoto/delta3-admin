@@ -1,44 +1,37 @@
-// telnetform.h
+// graphform.h
 // Delta3 project -- Universal remote control system
 
 #pragma once
 
 #include <QWidget>
+#include <QGraphicsScene>
 #include "network.h"
-#include "defines.h"
 
 //------------------------------------------------------------------------------
 namespace Ui
 {
-class TelnetForm;
+class GraphForm;
 }
 //------------------------------------------------------------------------------
-class TelnetForm : public QWidget
+class GraphForm : public QWidget
 {
     Q_OBJECT
-
 public:
-    explicit TelnetForm(
+    explicit GraphForm(
         Network* network,
         qint16 clientId,
-        QWidget* parent = 0
-    );
-    ~TelnetForm();
+        QWidget* parent = 0 );
+    ~GraphForm();
+
+private:
+    QByteArray bytePicIn;
+    QPixmap picIn;
+    QGraphicsScene scene;
+    Network* network_;
+    qint16 clientId_;
+    Ui::GraphForm* ui;
 
 private slots:
     void onDataReceived();
-
-private:
-    bool eventFilter( QObject* _o, QEvent* _e );
-
-private:
-    void textScrollDown();
-
-private:
-    Network* network_;
-    qint16 clientId_;
-    Ui::TelnetForm* ui;
-    QString currentCmd_;
-    QString history_;
 };
 //------------------------------------------------------------------------------

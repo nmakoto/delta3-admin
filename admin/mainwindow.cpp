@@ -18,6 +18,30 @@ MainWindow::MainWindow( QWidget* parent ):
         SLOT(onRedraw())
     );
     this->setFixedSize( this->size() );
+    //QTextCodec::setCodecForLocale( QTextCodec::codecForName("CP-866") );
+    QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
+    ui->listWidget->setContextMenuPolicy( Qt::CustomContextMenu );
+
+    QAction* act;
+    modeMenu_ = new QMenu( this );
+
+    act = new QAction( tr("Telnet mode"), this );
+    connect( act, SIGNAL(triggered()), this, SLOT(runTelnet()) );
+    modeMenu_->addAction( act );
+
+    act = new QAction( tr("File mode"), this );
+    connect( act, SIGNAL(triggered()), this, SLOT(runFile()) );
+    modeMenu_->addAction( act );
+
+    act = new QAction( tr("Graphics mode"), this );
+    connect( act, SIGNAL(triggered()), this, SLOT(runGraph()) );
+    modeMenu_->addAction( act );
+
+    modeMenu_->addSeparator();
+
+    act = new QAction( tr("Options"), this );
+    connect( act, SIGNAL(triggered()), this, SLOT(runOptions()) );
+    modeMenu_->addAction( act );
 }
 //------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -43,7 +67,7 @@ void MainWindow::onRedraw()
         i++
     )
     {
-        item = new QListWidgetItem( i.value()->getHash() );
+        item = new QListWidgetItem( i.value()->getOs() );
         item->setWhatsThis( QString("%1").arg(i.value()->getId()) );
         list->addItem( item );
     }
@@ -51,7 +75,35 @@ void MainWindow::onRedraw()
 //------------------------------------------------------------------------------
 void MainWindow::on_listWidget_itemClicked( QListWidgetItem* item )
 {
-    // TODO: menu with select connection mode
+    Q_UNUSED( item );
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_listWidget_itemDoubleClicked( QListWidgetItem* item )
+{
+    Q_UNUSED( item );
+    qDebug() << "Double Click!";
+    runTelnet();
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_listWidget_customContextMenuRequested( const QPoint& pos )
+{
+    Q_UNUSED( pos );
+    qDebug() << "Context Menu!";
+
+    if( ui->listWidget->selectedItems().size() == 0 )
+        return;
+
+    // modeMenu_->raise();
+    modeMenu_->move( QCursor::pos() );
+    modeMenu_->show();
+}
+//------------------------------------------------------------------------------
+void MainWindow::runTelnet()
+{
+    if( ui->listWidget->selectedItems().size() == 0 )
+        return;
+
+    QListWidgetItem* item = ui->listWidget->selectedItems()[0];
 
     TelnetForm* telnet = new TelnetForm(
         network_,
@@ -61,5 +113,51 @@ void MainWindow::on_listWidget_itemClicked( QListWidgetItem* item )
     // REVIEW: potential memory leak?
 
     telnet->show();
+}
+//------------------------------------------------------------------------------
+void MainWindow::runGraph()
+{
+    if( ui->listWidget->selectedItems().size() == 0 )
+        return;
+
+    QListWidgetItem* item = ui->listWidget->selectedItems()[0];
+    GraphForm* graph = new GraphForm(
+        network_,
+        item->whatsThis().toInt()
+    );
+    // REVIEW: potential memory leak?
+    graph->show();
+}
+//------------------------------------------------------------------------------
+void MainWindow::runFile()
+{
+    if( ui->listWidget->selectedItems().size() == 0 )
+        return;
+
+    QListWidgetItem* item = ui->listWidget->selectedItems()[0];
+    FileForm* file = new FileForm(
+        network_,
+        item->whatsThis().toInt()
+    );
+    // REVIEW: potential memory leak?
+    file->show();
+}
+//------------------------------------------------------------------------------
+void MainWindow::runOptions()
+{
+    if( ui->listWidget->selectedItems().size() == 0 )
+        return;
+
+    QListWidgetItem* item = ui->listWidget->selectedItems()[0];
+    ClientInfoDialog dialog( item->whatsThis().toInt(), network_ );
+    dialog.exec();
+
+    /*
+    FileForm *file = new FileForm(
+                network_,
+                item->whatsThis().toInt());
+            // REVIEW: potential memory leak?
+    file->show();
+    */
 }
 //------------------------------------------------------------------------------

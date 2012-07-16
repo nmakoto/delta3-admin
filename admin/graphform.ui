@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>TelnetForm</class>
- <widget class="QWidget" name="TelnetForm">
+ <class>GraphForm</class>
+ <widget class="QWidget" name="GraphForm">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>401</width>
-    <height>261</height>
+    <width>664</width>
+    <height>512</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string notr="true">Form</string>
+   <string>Form</string>
   </property>
-  <widget class="QTextEdit" name="textEdit">
+  <widget class="QGraphicsView" name="graphicsView">
    <property name="geometry">
     <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>401</width>
-     <height>261</height>
+     <x>10</x>
+     <y>10</y>
+     <width>641</width>
+     <height>491</height>
     </rect>
    </property>
   </widget>
